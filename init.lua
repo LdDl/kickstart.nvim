@@ -580,6 +580,15 @@ require('lazy').setup({
           if client and client:supports_method('textDocument/inlayHint', event.buf) then
             map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[T]oggle Inlay [H]ints')
           end
+
+          -- Code lenses: show "run test" / "run benchmark" above functions (like VS Code)
+          if client and client:supports_method('textDocument/codeLens', event.buf) then
+            map('<leader>cl', vim.lsp.codelens.run, '[C]ode [L]ens run')
+            vim.api.nvim_create_autocmd({ 'BufEnter', 'InsertLeave' }, {
+              buffer = event.buf,
+              callback = vim.lsp.codelens.refresh,
+            })
+          end
         end,
       })
 
@@ -594,15 +603,56 @@ require('lazy').setup({
       --  See `:help lsp-config` for information about keys and how to configure
       local servers = {
         -- clangd = {},
-        -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
-        --
-        -- Some languages (like typescript) have entire language plugins that can be useful:
-        --    https://github.com/pmizio/typescript-tools.nvim
-        --
-        -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
+
+        gopls = {
+          settings = {
+            gopls = {
+              analyses = {
+                ST1003 = true,
+                fieldalignment = false,
+                fillreturns = true,
+                nilness = true,
+                nonewvars = true,
+                shadow = true,
+                undeclaredname = true,
+                unreachable = true,
+                unusedparams = true,
+                unusedwrite = true,
+                useany = true,
+              },
+              codelenses = {
+                gc_details = true,
+                generate = true,
+                regenerate_cgo = true,
+                test = true,
+                tidy = true,
+                upgrade_dependency = true,
+                vendor = true,
+              },
+              hints = {
+                assignVariableTypes = true,
+                compositeLiteralFields = true,
+                compositeLiteralTypes = true,
+                constantValues = true,
+                functionTypeParameters = true,
+                parameterNames = true,
+                rangeVariableTypes = true,
+              },
+              buildFlags = { '-tags', 'integration' },
+              completeUnimported = true,
+              diagnosticsDelay = '500ms',
+              gofumpt = true,
+              matcher = 'Fuzzy',
+              semanticTokens = true,
+              staticcheck = true,
+              symbolMatcher = 'fuzzy',
+              usePlaceholders = true,
+            },
+          },
+        },
       }
 
       -- Ensure the servers and tools above are installed
@@ -616,7 +666,13 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'lua-language-server', -- Lua Language server
         'stylua', -- Used to format Lua code
-        -- You can add other tools here that you want Mason to install
+        -- Go tools (delve is installed via mason-nvim-dap in debug.lua)
+        'gopls',
+        'goimports',
+        'gomodifytags',
+        'gotests',
+        'iferr',
+        'impl',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -686,10 +742,8 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
+        go = { 'goimports', lsp_format = 'last' },
         -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
@@ -870,7 +924,7 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
