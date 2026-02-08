@@ -673,6 +673,8 @@ require('lazy').setup({
         'gotests',
         'iferr',
         'impl',
+        -- Rust tools (rust-analyzer is managed by rustaceanvim, not mason)
+        'codelldb',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
